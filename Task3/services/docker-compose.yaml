@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      GRPC_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+      grpc_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,jaeger,service-a,service-b"
+      no_proxy: "localhost,127.0.0.1,jaeger,service-a,service-b"
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+
+  service-b:
+    build:
+      context: ./service-b
+    container_name: service-b
+    environment:
+      ENVIRONMENT: "local"
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      GRPC_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+      grpc_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,jaeger,service-a,service-b"
+      no_proxy: "localhost,127.0.0.1,jaeger,service-a,service-b"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
+    ports:
+      - "8081:8080"
+    depends_on:
+      - jaeger
+
+  service-a:
+    build:
+      context: ./service-a
+    container_name: service-a
+    environment:
+      ENVIRONMENT: "local"
+      SERVICE_B_URL: "http://service-b:8080/calculate"
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      GRPC_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+      grpc_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,jaeger,service-a,service-b"
+      no_proxy: "localhost,127.0.0.1,jaeger,service-a,service-b"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - jaeger
+      - service-b
